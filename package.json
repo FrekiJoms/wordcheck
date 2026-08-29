@@ -1,6 +1,6 @@
 {
   "name": "@frekijosh/wordcheck",
-  "version": "1.29.0",
+  "version": "1.30.0",
   "description": "Agentic AI for Word documents — scan, analyze, edit, and improve .docx files with conversational AI and live Word MCP integration",
   "main": "lib/scanner.js",
   "bin": {
@@ -11,8 +11,16 @@
     "test": "node test/index.js"
   },
   "keywords": [
-    "ai", "detector", "word", "docx", "writing", "plagiarism",
-    "ai-checker", "gpt", "chatgpt", "content-scanner"
+    "ai",
+    "detector",
+    "word",
+    "docx",
+    "writing",
+    "plagiarism",
+    "ai-checker",
+    "gpt",
+    "chatgpt",
+    "content-scanner"
   ],
   "author": "frekijosh",
   "license": "MIT",
