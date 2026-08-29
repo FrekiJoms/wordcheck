@@ -3,9 +3,12 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@frekijosh/wordcheck"><img src="https://img.shields.io/npm/v/@frekijosh/wordcheck.svg" alt="npm version"></a>
-  <a href="https://github.com/frekijosh/wordcheck/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@frekijosh/wordcheck.svg" alt="license"></a>
-  <img src="https://img.shields.io/npm/dm/@frekijosh/wordcheck.svg" alt="monthly downloads">
+  <a href="https://www.npmjs.com/package/@frekijosh/wordcheck"><img src="https://img.shields.io/npm/v/@frekijosh/wordcheck.svg?style=flat-square&color=CB3837" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@frekijosh/wordcheck"><img src="https://img.shields.io/npm/dm/@frekijosh/wordcheck.svg?style=flat-square&color=5FA04E" alt="monthly downloads"></a>
+  <a href="https://github.com/frekijosh/wordcheck/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@frekijosh/wordcheck.svg?style=flat-square&color=FF6B35" alt="license"></a>
+  <a href="https://github.com/frekijosh/wordcheck"><img src="https://img.shields.io/github/stars/frekijosh/wordcheck.svg?style=flat-square&color=F0DB4F" alt="GitHub stars"></a>
+  <a href="https://github.com/frekijosh/wordcheck/issues"><img src="https://img.shields.io/github/issues/frekijosh/wordcheck.svg?style=flat-square&color=4C8BF5" alt="GitHub issues"></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D14-5FA04E.svg?style=flat-square" alt="Node.js 14+">
 </p>
 
 <p align="center">
@@ -143,6 +146,16 @@ wordcheck> 3
 
 Risk levels: **HIGH** ≥ 15, **MEDIUM** ≥ 8, **LOW** < 8
 
+## Contributing
+
+Contributions are welcome! Please open an issue first to discuss what you'd like to change.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
 ## License
 
-MIT
+[MIT](https://github.com/frekijosh/wordcheck/blob/main/LICENSE)
