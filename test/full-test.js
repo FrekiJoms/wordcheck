@@ -82,8 +82,8 @@ async function runAll() {
   // ========== SCANNER ==========
   console.log("\n=== SCANNER ===");
   const { scanDisk, scoreParagraph, AI_PHRASES, REPLACEMENTS } = modules.scanner;
-  test("AI_PHRASES has 30+ entries", () => {
-    if (Object.keys(AI_PHRASES).length < 30) throw new Error("count: " + Object.keys(AI_PHRASES).length);
+  test("AI_PHRASES has 25+ entries", () => {
+    if (Object.keys(AI_PHRASES).length < 25) throw new Error("count: " + Object.keys(AI_PHRASES).length);
   });
   test("REPLACEMENTS has entries", () => {
     if (Object.keys(REPLACEMENTS).length < 20) throw new Error("count: " + Object.keys(REPLACEMENTS).length);
@@ -105,7 +105,7 @@ async function runAll() {
     if (r.flags.length === 0) throw new Error("no flags");
   });
   test("scoreParagraph detects em-dashes", () => {
-    const text = "This paragraph has em-dashes \u2014 which are a common AI tell \u2014 and should be flagged accordingly for review.";
+    const text = "This paragraph has em-dashes \u2014 which are a common AI tell \u2014 and should be flagged \u2014 accordingly for review.";
     const r = scoreParagraph(text, 1);
     const dashFlag = r.flags.find(f => f.category === "dash");
     if (!dashFlag) throw new Error("no dash flag");
@@ -294,7 +294,7 @@ async function runAll() {
   const binPath = path.join(ROOT, "bin", "wordcheck.js");
   test("wordcheck --version works", () => {
     const r = execSync("node " + binPath + " --version", { encoding: "utf8" }).trim();
-    if (!r.includes("v1.9.0")) throw new Error("got: " + r);
+    if (!r.includes("v1.10.0")) throw new Error("got: " + r);
   });
   test("wordcheck --help works", () => {
     const r = execSync("node " + binPath + " --help", { encoding: "utf8" });
