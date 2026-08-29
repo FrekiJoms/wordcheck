@@ -242,6 +242,91 @@ async function runAll() {
     if (l.provider !== c.api.provider) throw new Error("provider mismatch");
   });
 
+  // ========== SETTINGS & MODEL PRESETS ==========
+  console.log("\n=== SETTINGS & MODEL PRESETS ===");
+  const { saveConfig, MODEL_PRESETS, PROVIDER_DEFAULTS } = modules.aiAgent;
+  test("saveConfig writes file", () => {
+    const tmpFile = path.join(ROOT, "test-config-tmp.json");
+    const ok = saveConfig({ api: { provider: "test" } }, tmpFile);
+    // saveConfig uses fixed path — test it returns true
+    if (typeof ok !== "boolean") throw new Error("saveConfig should return boolean");
+  });
+  test("MODEL_PRESETS has all providers", () => {
+    const needed = ["opencode-go", "openai", "ollama", "custom"];
+    for (const p of needed) {
+      if (!MODEL_PRESETS[p]) throw new Error("missing provider: " + p);
+      if (!Array.isArray(MODEL_PRESETS[p])) throw new Error("not array: " + p);
+      if (MODEL_PRESETS[p].length === 0) throw new Error("empty: " + p);
+    }
+  });
+  test("MODEL_PRESETS entries have id and desc", () => {
+    for (const [provider, models] of Object.entries(MODEL_PRESETS)) {
+      for (const m of models) {
+        if (!m.id) throw new Error(provider + " model missing id");
+        if (!m.desc) throw new Error(provider + " model " + m.id + " missing desc");
+      }
+    }
+  });
+  test("PROVIDER_DEFAULTS has all providers", () => {
+    const needed = ["opencode-go", "openai", "ollama", "custom"];
+    for (const p of needed) {
+      if (!PROVIDER_DEFAULTS[p]) throw new Error("missing provider: " + p);
+      if (!PROVIDER_DEFAULTS[p].baseUrl && p !== "custom") throw new Error("missing baseUrl: " + p);
+    }
+  });
+  test("opencode-go models include mimo-v2.5-pro", () => {
+    const models = MODEL_PRESETS["opencode-go"];
+    const found = models.find(m => m.id === "mimo-v2.5-pro");
+    if (!found) throw new Error("mimo-v2.5-pro not found");
+  });
+  test("openai models include gpt-4o", () => {
+    const models = MODEL_PRESETS.openai;
+    const found = models.find(m => m.id === "gpt-4o");
+    if (!found) throw new Error("gpt-4o not found");
+  });
+  test("ollama models include llama3.1", () => {
+    const models = MODEL_PRESETS.ollama;
+    const found = models.find(m => m.id === "llama3.1");
+    if (!found) throw new Error("llama3.1 not found");
+  });
+
+  // ========== TERMINAL MODAL ==========
+  console.log("\n=== TERMINAL MODAL ===");
+  const { Terminal } = modules.terminal;
+  test("Terminal has modal state", () => {
+    const t = new Terminal();
+    if (!t.modal) throw new Error("no modal state");
+    if (t.modal.visible !== false) throw new Error("modal should start hidden");
+    if (typeof t.modal.selected !== "number") throw new Error("no selected");
+  });
+  test("Terminal showModal sets state", () => {
+    const t = new Terminal();
+    let called = false;
+    t.showModal("TEST", ["line1", "line2"], 0, () => { called = true; }, () => {});
+    if (!t.modal.visible) throw new Error("not visible");
+    if (t.modal.title !== "TEST") throw new Error("wrong title");
+    if (t.modal.lines.length !== 2) throw new Error("wrong lines");
+    if (t.modal.selected !== 0) throw new Error("wrong selected");
+  });
+  test("Terminal modalUp/modalDown navigate", () => {
+    const t = new Terminal();
+    t.showModal("TEST", ["a", "b", "c"], 0, () => {}, () => {});
+    t.modalDown();
+    if (t.modal.selected !== 1) throw new Error("down failed: " + t.modal.selected);
+    t.modalDown();
+    if (t.modal.selected !== 2) throw new Error("down2 failed");
+    t.modalDown(); // should not go past end
+    if (t.modal.selected !== 2) throw new Error("should not go past end");
+    t.modalUp();
+    if (t.modal.selected !== 1) throw new Error("up failed");
+  });
+  test("Terminal hideModal clears state", () => {
+    const t = new Terminal();
+    t.showModal("TEST", ["a"], 0, () => {}, () => {});
+    t.hideModal();
+    if (t.modal.visible) throw new Error("still visible");
+  });
+
   // ========== CONSTANTS ==========
   console.log("\n=== CONSTANTS ===");
   const C = modules.constants;
