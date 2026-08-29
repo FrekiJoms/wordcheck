@@ -5,12 +5,15 @@ const path = require("path");
 const ROOT = path.join(__dirname, "..");
 
 let pass = 0, fail = 0;
+const pendingTests = [];
 function test(name, fn) {
   try {
     const result = fn();
     if (result && result.then) {
-      return result.then(() => { console.log("  PASS " + name); pass++; })
-                   .catch(e => { console.log("  FAIL " + name + ": " + e.message); fail++; });
+      const pending = result.then(() => { console.log("  PASS " + name); pass++; })
+                           .catch(e => { console.log("  FAIL " + name + ": " + e.message); fail++; });
+      pendingTests.push(pending);
+      return pending;
     }
     console.log("  PASS " + name);
     pass++;
@@ -30,6 +33,8 @@ async function runAll() {
   test("constants", () => { modules.constants = require(path.join(ROOT, "lib/constants")); });
   test("prompts", () => { modules.prompts = require(path.join(ROOT, "lib/prompts")); });
   test("table", () => { modules.table = require(path.join(ROOT, "lib/table")); });
+  test("analytics", () => { modules.analytics = require(path.join(ROOT, "lib/analytics")); });
+  test("wordmark", () => { modules.wordmark = require(path.join(ROOT, "lib/wordmark")); });
   test("scanner", () => { modules.scanner = require(path.join(ROOT, "lib/scanner")); });
   test("findings", () => { modules.findings = require(path.join(ROOT, "lib/findings")); });
   test("ai", () => { modules.ai = require(path.join(ROOT, "lib/ai")); });
@@ -74,9 +79,29 @@ async function runAll() {
     const r = renderTable({ headers: ["A", "B"], widths: [10, 10], rows: [["1", "2"]] });
     if (r.length < 4) throw new Error("lines: " + r.length);
   });
+  test("renderTable keeps borders aligned with long values", () => {
+    const r = renderTable({
+      headers: ["ID", "Category", "Title"],
+      rows: [["F-0001", "sentence_starter", "x".repeat(200)]],
+      maxWidth: 80,
+    });
+    const widths = r.map(visibleLen);
+    if (new Set(widths).size !== 1) throw new Error("row widths: " + widths.join(","));
+    if (widths[0] > 80) throw new Error("table overflow: " + widths[0]);
+    if (!r[r.length - 1].includes("\u2518")) throw new Error("broken bottom border");
+  });
   test("renderPanel returns lines", () => {
     const r = renderPanel({ title: "Test", lines: ["line1", "line2"] });
     if (r.length < 4) throw new Error("lines: " + r.length);
+  });
+  test("renderSeverityBar returns analytics", () => {
+    const r = modules.analytics.renderSeverityBar({ bySeverity: { HIGH: 1, MEDIUM: 2, LOW: 7 } }, 80);
+    if (!r.includes("H:1") || !r.includes("M:2") || !r.includes("L:7")) throw new Error("missing analytics labels");
+  });
+  test("renderWordmark has six styled rows", () => {
+    const r = modules.wordmark.renderWordmark();
+    if (r.length !== 6) throw new Error("rows: " + r.length);
+    if (!r[0].includes("██") || !r[0].includes("████")) throw new Error("wordmark glyphs missing");
   });
 
   // ========== SCANNER ==========
@@ -294,7 +319,8 @@ async function runAll() {
   const binPath = path.join(ROOT, "bin", "wordcheck.js");
   test("wordcheck --version works", () => {
     const r = execSync("node " + binPath + " --version", { encoding: "utf8" }).trim();
-    if (!r.includes("v1.22.1")) throw new Error("got: " + r);
+    const expectedVersion = require(path.join(ROOT, "package.json")).version;
+    if (!r.includes("v" + expectedVersion)) throw new Error("got: " + r);
   });
   test("wordcheck --help works", () => {
     const r = execSync("node " + binPath + " --help", { encoding: "utf8" });
@@ -338,6 +364,45 @@ async function runAll() {
     const text = r.join("\n");
     if (!text.includes("+")) throw new Error("no + marker");
   });
+
+  // ========== HEADER STATE ==========
+  console.log("\n=== HEADER STATE ===");
+  test("header contains live scan summary and analytics", async () => {
+    const Agent = require(path.join(ROOT, "lib/agent"));
+    const agent = new Agent();
+    let header = [];
+    agent.terminal = {
+      width: 100,
+      setHeader: (lines) => { header = lines; },
+    };
+    agent.filePath = DOC;
+    agent.scanResult = { totalBody: 19, totalScore: 38, aiPercentage: 7 };
+    agent.findings = [
+      { severity: "HIGH", status: "NEW", fixable: true },
+      { severity: "MEDIUM", status: "APPROVED", fixable: true },
+      { severity: "LOW", status: "FIXED", fixable: false },
+    ];
+    agent._updateHeader();
+    const text = header.join("\n").replace(/\x1B\[[0-9;]*m/g, "");
+    if (!text.includes("RESEARCH CHAPTER II - IMPROVED.docx")) throw new Error("file missing");
+    if (!text.includes("risk") || !text.includes("H:1") || !text.includes("M:1") || !text.includes("L:1")) throw new Error("analytics missing");
+    if (!text.includes("approved 1") || !text.includes("fixed 1")) throw new Error("status counts missing");
+  });
+  test("header hides scan summary before a scan", () => {
+    const Agent = require(path.join(ROOT, "lib/agent"));
+    const agent = new Agent();
+    let header = [];
+    agent.terminal = { width: 100, setHeader: (lines) => { header = lines; } };
+    agent.scanResult = null;
+    agent.filePath = null;
+    agent.findings = [];
+    agent._updateHeader();
+    const text = header.join("\n");
+    if (text.includes("risk") || text.includes("paras")) throw new Error("stale scan summary");
+    if (!text.includes("WordCheck Agent")) throw new Error("agent header missing");
+  });
+
+  await Promise.all(pendingTests);
 
   // ========== SUMMARY ==========
   console.log("\n==========================================");

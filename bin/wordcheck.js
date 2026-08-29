@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const chalk = require("chalk");
 const Agent = require("../lib/agent");
+const { renderWordmark } = require("../lib/wordmark");
 
 const args = process.argv.slice(2);
 const version = require("../package.json").version;
@@ -21,12 +22,7 @@ const C = {
 // ---------------------------------------------------------------------------
 function printUsage() {
   console.log();
-  console.log(C.pink("  ██╗    ██╗ ██████╗ ██████╗ ██████╗  ██████╗██╗  ██╗███████╗ ██████╗██╗  ██╗"));
-  console.log(C.pink("  ██║    ██║██╔═══██╗██╔══██╗██╔══██╗██╔════╝██║  ██║██╔════╝██╔════╝██║ ██╔╝"));
-  console.log(C.pink("  ██║ █╗ ██║██║   ██║██████╔╝██║  ██║██║     ███████║█████╗  ██║     █████╔╝ "));
-  console.log(C.pink("  ██║███╗██║██║   ██║██╔══██╗██║  ██║██║     ██╔══██║██╔══╝  ██║     ██╔═██╗ "));
-  console.log(C.pink("  ╚███╔███╔╝╚██████╔╝██║  ██║██████╔╝╚██████╗██║  ██║███████╗╚██████╗██║  ██╗"));
-  console.log(C.pink("   ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝"));
+  for (const line of renderWordmark()) console.log(line);
   console.log();
   console.log(C.dim("  AI-Tell Scanner for Word Documents"));
   console.log();
