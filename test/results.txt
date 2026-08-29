@@ -1,0 +1,27 @@
+EXIT:0
+  ✓  scoreParagraph returns SKIP for short text (<50 chars)
+  ✓  scoreParagraph returns SKIP for empty string
+  ✓  scoreParagraph detects 'moreover' as AI phrase
+  ✓  scoreParagraph detects 'the present study' (weight 3)
+  ✓  scoreParagraph does not flag clean human-sounding text as HIGH
+  ✓  scoreParagraph detects missing contractions in long paragraph
+  ✓  scoreParagraph does NOT flag contractions when they are present
+  ✓  scoreParagraph detects em-dashes
+  ✓  scoreParagraph flags highly uniform sentence lengths
+  ✓  scoreParagraph assigns HIGH for score >= 15
+  ✓  scoreParagraph assigns MEDIUM for score 8–14
+  ✓  buildResult computes totals correctly
+  ✓  buildResult handles empty paragraph list without dividing by zero
+  ✓  suggestFixes suggests replacement for 'moreover'
+  ✓  suggestFixes suggests contractions when none present
+  ✓  suggestFixes suggests em-dash replacement when em-dashes present
+  ✓  scoreParagraph treats prompt-injection attempts as plain text
+  ✓  AI_PHRASES contains only positive integer weights
+  ✓  REPLACEMENTS values are non-empty arrays of strings
+  ✓  Extension check is case-insensitive for .DOCX
+  ✓  Extension check rejects .doc (Word 97) files
+  ✓  Extension check rejects .pdf files
+
+  Results: 22 passed, 0 failed
+
+  All tests passed.

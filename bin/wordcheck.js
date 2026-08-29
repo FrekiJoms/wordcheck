@@ -3,25 +3,43 @@
 
 const fs = require("fs");
 const path = require("path");
-const { interactiveScan, noninteractiveScan, renderBanner } = require("../lib/cli");
+const readline = require("readline");
+const chalk = require("chalk");
+const { interactiveScan, noninteractiveScan, renderBanner, renderFilePromptUI } = require("../lib/cli");
 
 const args = process.argv.slice(2);
 const version = require("../package.json").version;
 
+// ---------------------------------------------------------------------------
+// Colors — keep consistent with cli.js palette
+// ---------------------------------------------------------------------------
+const C = {
+  pink: chalk.hex("#FF79C6"),
+  dim:  chalk.hex("#6272A4"),
+  bar:  chalk.hex("#FF79C6"),
+  red:  chalk.hex("#FF5555"),
+  white: chalk.hex("#F8F8F2"),
+};
+
+// ---------------------------------------------------------------------------
+// Help / version
+// ---------------------------------------------------------------------------
 function printUsage() {
   renderBanner();
-  console.log("  Usage: wordcheck <document.docx>\n");
-  console.log("  Options:");
-  console.log("    -n, --noninteractive   Non-interactive mode (for piping)");
-  console.log("    -v, --version          Show version");
-  console.log("    -h, --help             Show this help\n");
-  console.log("  Examples:");
-  console.log("    wordcheck my_paper.docx");
-  console.log("    wordcheck my_paper.docx -n | more");
+  console.log(C.dim("  Usage"));
+  console.log("    " + C.pink("wordcheck") + C.dim("                  launch interactive file selector"));
+  console.log("    " + C.pink("wordcheck") + " " + C.white("<document.docx>") + C.dim("    scan a document directly"));
+  console.log("    " + C.pink("wordcheck") + " " + C.white("<document.docx>") + " " + C.white("-n") + C.dim("  non-interactive / pipe mode"));
+  console.log();
+  console.log(C.dim("  Options"));
+  console.log("    " + C.white("-n") + C.dim(", ") + C.white("--noninteractive") + C.dim("   pipe-friendly output, no REPL"));
+  console.log("    " + C.white("-v") + C.dim(", ") + C.white("--version") + C.dim("          show version"));
+  console.log("    " + C.white("-h") + C.dim(", ") + C.white("--help") + C.dim("             show this help"));
+  console.log();
 }
 
 if (args.includes("--version") || args.includes("-v")) {
-  console.log("wordcheck " + version);
+  console.log(C.pink("wordcheck") + C.dim("  v" + version));
   process.exit(0);
 }
 
@@ -31,26 +49,77 @@ if (args.includes("--help") || args.includes("-h")) {
 }
 
 const noninteractive = args.includes("--noninteractive") || args.includes("-n");
-const filePath = args.find((a) => !a.startsWith("-"));
+const fileArg = args.find((a) => !a.startsWith("-"));
 
-if (!filePath) {
-  printUsage();
-  process.exit(0);
+// ---------------------------------------------------------------------------
+// Validation
+// ---------------------------------------------------------------------------
+/**
+ * Validate that a resolved path points to an existing, readable .docx file.
+ * Returns an error string or null if valid.
+ */
+function validateDocx(resolved) {
+  if (!fs.existsSync(resolved)) return "File not found: " + resolved;
+  if (!resolved.toLowerCase().endsWith(".docx")) return "Only .docx files are supported";
+  return null;
 }
 
-const resolved = path.resolve(filePath);
-if (!fs.existsSync(resolved)) {
-  console.error("Error: File not found: " + filePath);
-  process.exit(1);
+// ---------------------------------------------------------------------------
+// Interactive file prompt — shown when wordcheck is run with no arguments
+// ---------------------------------------------------------------------------
+function promptForFile() {
+  renderFilePromptUI();
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  rl.on("SIGINT", () => {
+    console.log("\n" + C.dim("  cancelled."));
+    rl.close();
+    process.exit(0);
+  });
+
+  const ask = () => {
+    rl.question(C.bar("  │ ") + C.pink.bold("wordcheck") + C.dim(" › "), (answer) => {
+      const input = answer.trim();
+      if (!input) { ask(); return; }
+
+      const resolved = path.resolve(input);
+      const err = validateDocx(resolved);
+      if (err) {
+        console.error(C.red("  ✗  ") + C.dim(err));
+        ask();
+        return;
+      }
+
+      rl.close();
+      interactiveScan(resolved);
+    });
+  };
+
+  ask();
 }
 
-if (!resolved.endsWith(".docx")) {
-  console.error("Error: Only .docx files are supported");
-  process.exit(1);
-}
-
-if (noninteractive) {
-  noninteractiveScan(resolved);
+// ---------------------------------------------------------------------------
+// Main routing
+// ---------------------------------------------------------------------------
+if (!fileArg) {
+  if (noninteractive) {
+    console.error(C.red("Error: ") + "A file path is required in non-interactive mode");
+    console.error(C.dim("Usage: wordcheck <document.docx> -n"));
+    process.exit(1);
+  }
+  promptForFile();
 } else {
-  interactiveScan(resolved);
+  const resolved = path.resolve(fileArg);
+  const err = validateDocx(resolved);
+  if (err) {
+    console.error(C.red("  ✗  ") + err);
+    process.exit(1);
+  }
+
+  if (noninteractive) {
+    noninteractiveScan(resolved);
+  } else {
+    interactiveScan(resolved);
+  }
 }
