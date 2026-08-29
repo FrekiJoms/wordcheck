@@ -185,9 +185,9 @@ async function runAll() {
   // ========== AI AGENT CONFIG ==========
   console.log("\n=== AI AGENT ===");
   const { LLMClient, getAllTools, SYSTEM_PROMPT, loadConfig } = modules.aiAgent;
-  test("getAllTools returns 20 tools", () => {
+  test("getAllTools returns 22 tools", () => {
     const tools = getAllTools();
-    if (tools.length !== 20) throw new Error("count: " + tools.length);
+    if (tools.length !== 22) throw new Error("count: " + tools.length);
   });
   test("tools have required fields", () => {
     const tools = getAllTools();
@@ -294,7 +294,7 @@ async function runAll() {
   const binPath = path.join(ROOT, "bin", "wordcheck.js");
   test("wordcheck --version works", () => {
     const r = execSync("node " + binPath + " --version", { encoding: "utf8" }).trim();
-    if (!r.includes("v1.14.0")) throw new Error("got: " + r);
+    if (!r.includes("v1.16.0")) throw new Error("got: " + r);
   });
   test("wordcheck --help works", () => {
     const r = execSync("node " + binPath + " --help", { encoding: "utf8" });
