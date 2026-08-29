@@ -1,7 +1,7 @@
 {
   "name": "@frekijosh/wordcheck",
-  "version": "1.1.1",
-  "description": "AI-Tell Scanner for Word Documents - detect AI-generated content patterns in .docx files",
+  "version": "1.2.0",
+  "description": "AI-Tell Scanner for Word Documents - detect, analyze, and fix AI-generated content patterns in .docx files with MCP integration",
   "main": "lib/scanner.js",
   "bin": {
     "wordcheck": "bin/wordcheck.js"
@@ -21,8 +21,7 @@
   },
   "dependencies": {
     "mammoth": "^1.6.0",
-    "chalk": "^4.1.2",
-    "boxen": "^5.1.2"
+    "chalk": "^4.1.2"
   },
   "files": [
     "bin/",

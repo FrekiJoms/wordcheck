@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
 const chalk = require("chalk");
-const { interactiveScan, noninteractiveScan, renderBanner, renderFilePromptUI } = require("../lib/cli");
+const Agent = require("../lib/agent");
 
 const args = process.argv.slice(2);
 const version = require("../package.json").version;
@@ -14,15 +14,37 @@ const version = require("../package.json").version;
 // Colors — keep consistent with cli.js palette
 // ---------------------------------------------------------------------------
 const C = {
-  pink: chalk.hex("#FF79C6"),
-  dim:  chalk.hex("#6272A4"),
-  bar:  chalk.hex("#FF79C6"),
-  red:  chalk.hex("#FF5555"),
+  pink:  chalk.hex("#FF79C6"),
+  dim:   chalk.hex("#6272A4"),
+  bar:   chalk.hex("#FF79C6"),
+  red:   chalk.hex("#FF5555"),
   white: chalk.hex("#F8F8F2"),
+  cyan:  chalk.hex("#8BE9FD"),
+  green: chalk.hex("#50FA7B"),
 };
 
 // ---------------------------------------------------------------------------
-// Help / version
+// Wordmark
+// ---------------------------------------------------------------------------
+const WORDMARK = [
+  "  ██╗    ██╗ ██████╗ ██████╗ ██████╗  ██████╗██╗  ██╗███████╗ ██████╗██╗  ██╗",
+  "  ██║    ██║██╔═══██╗██╔══██╗██╔══██╗██╔════╝██║  ██║██╔════╝██╔════╝██║ ██╔╝",
+  "  ██║ █╗ ██║██║   ██║██████╔╝██║  ██║██║     ███████║█████╗  ██║     █████╔╝ ",
+  "  ██║███╗██║██║   ██║██╔══██╗██║  ██║██║     ██╔══██║██╔══╝  ██║     ██╔═██╗ ",
+  "  ╚███╔███╔╝╚██████╔╝██║  ██║██████╔╝╚██████╗██║  ██║███████╗╚██████╗██║  ██╗",
+  "   ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝",
+];
+
+function renderBanner() {
+  console.log();
+  for (const line of WORDMARK) console.log(C.pink(line));
+  console.log();
+  console.log(C.dim("  AI-Tell Scanner for Word Documents"));
+  console.log();
+}
+
+// ---------------------------------------------------------------------------
+// Help
 // ---------------------------------------------------------------------------
 function printUsage() {
   renderBanner();
@@ -54,10 +76,6 @@ const fileArg = args.find((a) => !a.startsWith("-"));
 // ---------------------------------------------------------------------------
 // Validation
 // ---------------------------------------------------------------------------
-/**
- * Validate that a resolved path points to an existing, readable .docx file.
- * Returns an error string or null if valid.
- */
 function validateDocx(resolved) {
   if (!fs.existsSync(resolved)) return "File not found: " + resolved;
   if (!resolved.toLowerCase().endsWith(".docx")) return "Only .docx files are supported";
@@ -68,7 +86,10 @@ function validateDocx(resolved) {
 // Interactive file prompt — shown when wordcheck is run with no arguments
 // ---------------------------------------------------------------------------
 function promptForFile() {
-  renderFilePromptUI();
+  renderBanner();
+  console.log(C.bar("  │ ") + C.dim("Select a Word document to analyse"));
+  console.log(C.bar("  │ ") + C.dim("Paste a file path and press Enter"));
+  console.log();
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -92,11 +113,50 @@ function promptForFile() {
       }
 
       rl.close();
-      interactiveScan(resolved);
+      launchAgent(resolved);
     });
   };
 
   ask();
+}
+
+// ---------------------------------------------------------------------------
+// Launch the Agent
+// ---------------------------------------------------------------------------
+async function launchAgent(filePath) {
+  const agent = new Agent();
+  await agent.run(filePath);
+}
+
+// ---------------------------------------------------------------------------
+// Non-interactive scan (simple output for piping)
+// ---------------------------------------------------------------------------
+async function noninteractiveScan(filePath) {
+  const { scanDisk } = require("../lib/scanner");
+  const { buildFindings, summarizeFindings } = require("../lib/findings");
+
+  let result;
+  try {
+    result = await scanDisk(filePath);
+  } catch (e) {
+    console.error("Error: " + e.message);
+    process.exit(1);
+  }
+
+  const findings = buildFindings(result);
+  const summary = summarizeFindings(findings);
+
+  const pct = result.aiPercentage;
+  const verdict = pct >= 50 ? "likely AI-assisted" : pct >= 25 ? "mixed signals" : "reads human";
+  console.log(`File: ${path.basename(filePath)}`);
+  console.log(`Paragraphs: ${result.totalBody}  Score: ${result.totalScore}  AI: ${pct.toFixed(0)}%  (${verdict})`);
+  console.log(`Findings: ${summary.total}  HIGH: ${summary.bySeverity.HIGH}  MED: ${summary.bySeverity.MEDIUM}  LOW: ${summary.bySeverity.LOW}`);
+  console.log();
+
+  for (const f of findings) {
+    const sev = f.severity === "HIGH" ? "!!" : f.severity === "MEDIUM" ? "! " : "  ";
+    console.log(`${sev} ${f.id} [${f.category}] ${f.title}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -120,6 +180,6 @@ if (!fileArg) {
   if (noninteractive) {
     noninteractiveScan(resolved);
   } else {
-    interactiveScan(resolved);
+    launchAgent(resolved);
   }
 }
