@@ -1,0 +1,37 @@
+{
+  "name": "@frekijosh/wordcheck",
+  "version": "1.1.0",
+  "description": "AI-Tell Scanner for Word Documents - detect AI-generated content patterns in .docx files",
+  "main": "lib/scanner.js",
+  "bin": {
+    "wordcheck": "bin/wordcheck.js"
+  },
+  "scripts": {
+    "start": "node bin/wordcheck.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "ai", "detector", "word", "docx", "writing", "plagiarism",
+    "ai-checker", "gpt", "chatgpt", "content-scanner"
+  ],
+  "author": "frekijosh",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "mammoth": "^1.6.0",
+    "chalk": "^4.1.2",
+    "boxen": "^5.1.2",
+    "cli-table3": "^0.6.3"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frekijosh/wordcheck.git"
+  }
+}
