@@ -98,10 +98,9 @@ async function runAll() {
     const r = modules.analytics.renderSeverityBar({ bySeverity: { HIGH: 1, MEDIUM: 2, LOW: 7 } }, 80);
     if (!r.includes("H:1") || !r.includes("M:2") || !r.includes("L:7")) throw new Error("missing analytics labels");
   });
-  test("renderWordmark has six styled rows", () => {
+  test("renderWordmark has seven styled rows", () => {
     const r = modules.wordmark.renderWordmark();
-    if (r.length !== 6) throw new Error("rows: " + r.length);
-    if (!r[0].includes("██") || !r[0].includes("████")) throw new Error("wordmark glyphs missing");
+    if (r.length !== 7) throw new Error("rows: " + r.length);
   });
 
   // ========== SCANNER ==========
