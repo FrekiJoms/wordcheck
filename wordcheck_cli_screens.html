@@ -1,0 +1,200 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-mono, 'Courier New', monospace); font-size: 13px; }
+  .screens { display: flex; flex-direction: column; gap: 24px; padding: 16px 0; }
+  .screen-label { font-family: var(--font-sans); font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .terminal {
+    background: #1a1b26;
+    border-radius: 10px;
+    border: 0.5px solid #2d2f45;
+    overflow: hidden;
+    font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .titlebar {
+    background: #16161e;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 0.5px solid #2d2f45;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; }
+  .dot.y { background: #febc2e; }
+  .dot.g { background: #28c840; }
+  .title-text { flex: 1; text-align: center; font-size: 11px; color: #565f89; font-family: var(--font-sans); }
+  .body { padding: 18px 0 12px; }
+  .row { padding: 0 20px; white-space: pre; }
+  .blank { height: 6px; }
+  /* colors */
+  .brand { color: #5B8DEF; }
+  .pink  { color: #FF79C6; }
+  .cyan  { color: #8BE9FD; }
+  .green { color: #50FA7B; }
+  .yellow{ color: #F1FA8C; }
+  .red   { color: #FF5555; }
+  .dim   { color: #565f89; }
+  .white { color: #F8F8F2; }
+  .bar   { color: #FF79C6; }
+  .statusbar {
+    background: #16161e;
+    border-top: 0.5px solid #2d2f45;
+    padding: 6px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cursor { display: inline-block; width: 7px; height: 13px; background: #FF79C6; vertical-align: middle; animation: blink 1.1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+
+<div class="screens">
+
+  <div>
+    <div class="screen-label">1 — launch screen (no args)</div>
+    <div class="terminal">
+      <div class="titlebar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="title-text">wordcheck — zsh</div>
+      </div>
+      <div class="body">
+        <div class="blank"></div>
+        <div class="row brand">  ██╗    ██╗ ██████╗ ██████╗ ██████╗  ██████╗██╗  ██╗███████╗ ██████╗██╗  ██╗</div>
+        <div class="row brand">  ██║    ██║██╔═══██╗██╔══██╗██╔══██╗██╔════╝██║  ██║██╔════╝██╔════╝██║ ██╔╝</div>
+        <div class="row brand">  ██║ █╗ ██║██║   ██║██████╔╝██║  ██║██║     ███████║█████╗  ██║     █████╔╝ </div>
+        <div class="row brand">  ██║███╗██║██║   ██║██╔══██╗██║  ██║██║     ██╔══██║██╔══╝  ██║     ██╔═██╗ </div>
+        <div class="row brand">  ╚███╔███╔╝╚██████╔╝██║  ██║██████╔╝╚██████╗██║  ██║███████╗╚██████╗██║  ██╗</div>
+        <div class="row brand">   ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝</div>
+        <div class="blank"></div>
+        <div class="row dim">  AI-Tell Scanner for Word Documents</div>
+        <div class="blank"></div>
+        <div class="blank"></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">Select a Word document to analyse</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">Paste a file path and press Enter</span></div>
+        <div class="blank"></div>
+        <div class="row dim">  &lt;number&gt; inspect paragraph   ·   all show low-risk   ·   fix recommendations   ·   help commands</div>
+        <div class="blank"></div>
+        <div class="row"><span class="bar">  │ </span><span class="pink" style="font-weight:700">wordcheck</span><span class="dim"> › </span><span class="cursor"></span></div>
+        <div class="blank"></div>
+      </div>
+      <div class="statusbar">
+        <span><span style="color:#50FA7B">●</span> <span class="pink">wordcheck</span>  <span class="dim">v1.1.1</span></span>
+        <span class="dim">no document loaded</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="screen-label">2 — scan results</div>
+    <div class="terminal">
+      <div class="titlebar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="title-text">wordcheck — zsh</div>
+      </div>
+      <div class="body">
+        <div class="blank"></div>
+        <div class="row brand">  ██╗    ██╗ ██████╗ ██████╗ ██████╗  ██████╗██╗  ██╗███████╗ ██████╗██╗  ██╗</div>
+        <div class="row brand">  ██║    ██║██╔═══██╗██╔══██╗██╔══██╗██╔════╝██║  ██║██╔════╝██╔════╝██║ ██╔╝</div>
+        <div class="row brand">  ╚███╔███╔╝╚██████╔╝██║  ██║██████╔╝╚██████╗██║  ██║███████╗╚██████╗██║  ██╗</div>
+        <div class="blank"></div>
+        <div class="row"><span class="bar">  │ </span><span class="white" style="font-weight:600">my_paper.docx</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">paragraphs </span><span class="cyan">24</span><span class="dim">   score </span><span class="cyan">87</span><span class="dim">   ai likelihood </span><span class="yellow">45%</span><span class="dim">  ·  </span><span class="yellow">mixed signals</span></div>
+        <div class="blank"></div>
+        <div class="row">  <span class="red" style="font-weight:700">HIGH</span>  <span class="white"> 2</span>  <span class="yellow" style="font-weight:700">MED</span>  <span class="white"> 6</span>  <span class="green" style="font-weight:700">LOW</span>  <span class="white">16</span>    <span class="red">██</span><span class="yellow">███████</span><span class="green">████████████████</span><span class="dim">░</span></div>
+        <div class="blank"></div>
+        <div class="row dim">    #  risk       score  paragraph preview</div>
+        <div class="row dim">    ─────────────────────────────────────────────────────────────────────────</div>
+        <div class="row">  <span class="dim">  1</span> <span class="yellow">●</span> <span class="yellow">MEDIUM  </span>  <span class="cyan">12   </span>  <span class="dim">In recent years, the rapid growth of e-commerce has…</span></div>
+        <div class="row">  <span class="dim">  3</span> <span class="red">●</span> <span class="red">HIGH    </span>  <span class="cyan">18   </span>  <span class="dim">Moreover, the present study aims to examine the role…</span></div>
+        <div class="row">  <span class="dim">  7</span> <span class="yellow">●</span> <span class="yellow">MEDIUM  </span>  <span class="cyan">10   </span>  <span class="dim">Consequently, it is important to consider these factor…</span></div>
+        <div class="row">  <span class="dim">  9</span> <span class="yellow">●</span> <span class="yellow">MEDIUM  </span>  <span class="cyan">9    </span>  <span class="dim">Furthermore, the comprehensive analysis underpins the…</span></div>
+        <div class="blank"></div>
+        <div class="row dim">  &lt;number&gt; inspect   ·   all show low   ·   fix recs   ·   rescan   ·   help   ·   quit</div>
+        <div class="blank"></div>
+        <div class="row"><span class="bar">  │ </span><span class="pink" style="font-weight:700">wordcheck</span><span class="dim"> › </span><span class="cursor"></span></div>
+        <div class="blank"></div>
+      </div>
+      <div class="statusbar">
+        <span><span style="color:#50FA7B">●</span> <span class="pink">wordcheck</span>  <span class="dim">v1.1.1</span></span>
+        <span class="dim">my_paper.docx</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="screen-label">3 — paragraph detail view (type "3")</div>
+    <div class="terminal">
+      <div class="titlebar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="title-text">wordcheck — zsh</div>
+      </div>
+      <div class="body">
+        <div class="blank"></div>
+        <div class="row"><span class="bar">  │ </span><span class="white" style="font-weight:600">Paragraph 3</span>  <span class="red">● HIGH</span><span class="dim">  score 18</span></div>
+        <div class="row bar">  │</div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">Moreover, the present study aims to examine the role</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">of AI in academic writing. Furthermore, researchers</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">have found this to be crucially important for ensuring</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">comprehensive understanding of the pivotal issues.</span></div>
+        <div class="row bar">  │</div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">words </span><span class="cyan">145</span><span class="dim">   sentences </span><span class="cyan">6</span><span class="dim">   citations </span><span class="cyan">2</span><span class="dim">   contractions </span><span class="red">no</span><span class="dim">   em-dashes </span><span class="cyan">0</span></div>
+        <div class="row bar">  │</div>
+        <div class="row"><span class="bar">  │ </span><span class="pink" style="font-weight:600">AI tells</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="yellow">  ›  </span><span class="white">"moreover" x1</span><span class="dim">  +3</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="yellow">  ›  </span><span class="white">"the present study" x1</span><span class="dim">  +3</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="yellow">  ›  </span><span class="white">no contractions</span><span class="dim">  +3</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="yellow">  ›  </span><span class="white">uniform sentences (std=3.2)</span><span class="dim">  +5</span></div>
+        <div class="row bar">  │</div>
+        <div class="row"><span class="bar">  │ </span><span class="pink" style="font-weight:600">suggested fixes</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="green">  1.  </span><span class="white">Replace "the present study" with: this research, the current work</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="green">  2.  </span><span class="white">Replace "moreover" with: also, besides, on top of that</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="green">  3.  </span><span class="white">Add contractions (don't, it's, can't, etc.)</span></div>
+        <div class="blank"></div>
+        <div class="row"><span class="bar">  │ </span><span class="pink" style="font-weight:700">wordcheck</span><span class="dim"> › </span><span class="cursor"></span></div>
+        <div class="blank"></div>
+      </div>
+      <div class="statusbar">
+        <span><span style="color:#50FA7B">●</span> <span class="pink">wordcheck</span>  <span class="dim">v1.1.1</span></span>
+        <span class="dim">my_paper.docx</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="screen-label">4 — recommendations view (type "fix")</div>
+    <div class="terminal">
+      <div class="titlebar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="title-text">wordcheck — zsh</div>
+      </div>
+      <div class="body">
+        <div class="blank"></div>
+        <div class="row"><span class="bar">  │ </span><span class="pink" style="font-weight:600">Recommendations</span></div>
+        <div class="row bar">  │</div>
+        <div class="row"><span class="bar">  │ </span><span class="yellow">  1.  </span><span class="white">Replace AI phrases</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">       "moreover" x1</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">       "the present study" x2</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">       "comprehensive" x1</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">       "pivotal" x1</span></div>
+        <div class="row bar">  │</div>
+        <div class="row"><span class="bar">  │ </span><span class="yellow">  2.  </span><span class="white">Vary sentence starters</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">       starter "The" repeated x3</span></div>
+        <div class="row bar">  │</div>
+        <div class="row"><span class="bar">  │ </span><span class="yellow">  3.  </span><span class="white">Vary sentence lengths</span></div>
+        <div class="row"><span class="bar">  │ </span><span class="dim">       uniform sentences (std=3.2)</span></div>
+        <div class="row bar">  │</div>
+        <div class="row"><span class="bar">  │ </span><span class="yellow">  4.  </span><span class="white">Add contractions</span><span class="dim">  don't · it's · can't · we're</span></div>
+        <div class="blank"></div>
+        <div class="row"><span class="bar">  │ </span><span class="pink" style="font-weight:700">wordcheck</span><span class="dim"> › </span><span class="cursor"></span></div>
+        <div class="blank"></div>
+      </div>
+      <div class="statusbar">
+        <span><span style="color:#50FA7B">●</span> <span class="pink">wordcheck</span>  <span class="dim">v1.1.1</span></span>
+        <span class="dim">my_paper.docx</span>
+      </div>
+    </div>
+  </div>
+
+</div>
