@@ -1,7 +1,7 @@
 {
   "name": "@frekijosh/wordcheck",
-  "version": "1.4.0",
-  "description": "AI-Tell Scanner for Word Documents - detect, analyze, and fix AI-generated content patterns in .docx files with MCP integration",
+  "version": "1.5.0",
+  "description": "Agentic AI for Word documents — scan, analyze, edit, and improve .docx files with conversational AI and live Word MCP integration",
   "main": "lib/scanner.js",
   "bin": {
     "wordcheck": "bin/wordcheck.js"
