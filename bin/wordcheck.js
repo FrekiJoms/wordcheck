@@ -3,8 +3,15 @@
 
 const fs = require("fs");
 const path = require("path");
+const readline = require("readline");
 const chalk = require("chalk");
-const Agent = require("../lib/agent");
+const {
+  interactiveScan,
+  noninteractiveScan,
+  renderBanner,
+  renderFilePromptUI,
+  replPrompt,
+} = require("../lib/cli");
 
 const args = process.argv.slice(2);
 const version = require("../package.json").version;
@@ -14,9 +21,24 @@ const C = {
   dim:   chalk.hex("#6272A4"),
   red:   chalk.hex("#FF5555"),
   white: chalk.hex("#F8F8F2"),
-  cyan:  chalk.hex("#8BE9FD"),
-  green: chalk.hex("#50FA7B"),
 };
+
+// ---------------------------------------------------------------------------
+// Help / version
+// ---------------------------------------------------------------------------
+function printUsage() {
+  renderBanner(false);
+  console.log(C.dim("  Usage"));
+  console.log("    " + C.pink("wordcheck") + C.dim("                  launch interactive file selector"));
+  console.log("    " + C.pink("wordcheck") + " " + C.white("<document.docx>") + C.dim("    scan a document directly"));
+  console.log("    " + C.pink("wordcheck") + " " + C.white("<document.docx>") + " " + C.white("-n") + C.dim("  non-interactive / pipe mode"));
+  console.log();
+  console.log(C.dim("  Options"));
+  console.log("    " + C.white("-n") + C.dim(", ") + C.white("--noninteractive") + C.dim("   pipe-friendly output, no REPL"));
+  console.log("    " + C.white("-v") + C.dim(", ") + C.white("--version") + C.dim("          show version"));
+  console.log("    " + C.white("-h") + C.dim(", ") + C.white("--help") + C.dim("             show this help"));
+  console.log();
+}
 
 if (args.includes("--version") || args.includes("-v")) {
   console.log(C.pink("wordcheck") + C.dim("  v" + version));
@@ -24,19 +46,7 @@ if (args.includes("--version") || args.includes("-v")) {
 }
 
 if (args.includes("--help") || args.includes("-h")) {
-  console.log();
-  console.log(C.pink("  wordcheck") + C.dim("  AI-Tell Scanner for Word Documents"));
-  console.log();
-  console.log(C.dim("  Usage"));
-  console.log("    " + C.pink("wordcheck") + C.dim("                  open interactive TUI"));
-  console.log("    " + C.pink("wordcheck") + " " + C.white("<document.docx>") + C.dim("    scan a document"));
-  console.log("    " + C.pink("wordcheck") + " " + C.white("<document.docx>") + " " + C.white("-n") + C.dim("  non-interactive"));
-  console.log();
-  console.log(C.dim("  Options"));
-  console.log("    " + C.white("-n") + C.dim(", ") + C.white("--noninteractive") + C.dim("   pipe-friendly output"));
-  console.log("    " + C.white("-v") + C.dim(", ") + C.white("--version") + C.dim("          show version"));
-  console.log("    " + C.white("-h") + C.dim(", ") + C.white("--help") + C.dim("             show help"));
-  console.log();
+  printUsage();
   process.exit(0);
 }
 
@@ -53,40 +63,51 @@ function validateDocx(resolved) {
 }
 
 // ---------------------------------------------------------------------------
-// Non-interactive mode (piping)
+// Interactive file prompt — uses replPrompt() from cli.js (single definition)
 // ---------------------------------------------------------------------------
-async function noninteractiveScan(filePath) {
-  const { scanDisk } = require("../lib/scanner");
-  const { buildFindings, summarizeFindings } = require("../lib/findings");
+function promptForFile() {
+  renderFilePromptUI();
 
-  let result;
-  try {
-    result = await scanDisk(filePath);
-  } catch (e) {
-    console.error("Error: " + e.message);
-    process.exit(1);
-  }
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-  const findings = buildFindings(result);
-  const summary = summarizeFindings(findings);
-  const pct = result.aiPercentage;
-  const verdict = pct >= 50 ? "likely AI-assisted" : pct >= 25 ? "mixed signals" : "reads human";
+  rl.on("SIGINT", () => {
+    console.log("\n" + C.dim("  cancelled."));
+    rl.close();
+    process.exit(0);
+  });
 
-  console.log(`File: ${path.basename(filePath)}`);
-  console.log(`Paragraphs: ${result.totalBody}  Score: ${result.totalScore}  AI: ${pct.toFixed(0)}%  (${verdict})`);
-  console.log(`Findings: ${summary.total}  HIGH: ${summary.bySeverity.HIGH}  MED: ${summary.bySeverity.MEDIUM}  LOW: ${summary.bySeverity.LOW}`);
-  console.log();
+  const ask = () => {
+    rl.question(replPrompt(), (answer) => {
+      const input = answer.trim();
+      if (!input) { ask(); return; }
 
-  for (const f of findings) {
-    const sev = f.severity === "HIGH" ? "!!" : f.severity === "MEDIUM" ? "! " : "  ";
-    console.log(`${sev} ${f.id} [${f.category}] ${f.title}`);
-  }
+      const resolved = path.resolve(input);
+      const err = validateDocx(resolved);
+      if (err) {
+        console.error(C.red("  ✗  ") + C.dim(err));
+        ask();
+        return;
+      }
+
+      rl.close();
+      interactiveScan(resolved);
+    });
+  };
+
+  ask();
 }
 
 // ---------------------------------------------------------------------------
 // Main routing
 // ---------------------------------------------------------------------------
-if (fileArg) {
+if (!fileArg) {
+  if (noninteractive) {
+    console.error(C.red("  ✗  ") + "A file path is required in non-interactive mode");
+    console.error(C.dim("     Usage: wordcheck <document.docx> -n"));
+    process.exit(1);
+  }
+  promptForFile();
+} else {
   const resolved = path.resolve(fileArg);
   const err = validateDocx(resolved);
   if (err) {
@@ -97,17 +118,6 @@ if (fileArg) {
   if (noninteractive) {
     noninteractiveScan(resolved);
   } else {
-    // Launch TUI with file
-    const agent = new Agent();
-    agent.run(resolved);
+    interactiveScan(resolved);
   }
-} else {
-  if (noninteractive) {
-    console.error(C.red("Error: ") + "A file path is required in non-interactive mode");
-    process.exit(1);
-  }
-
-  // Launch TUI with file selector
-  const agent = new Agent();
-  agent.runWithFileSelector();
 }

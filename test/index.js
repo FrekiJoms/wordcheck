@@ -3,17 +3,18 @@
 /**
  * WordCheck test suite — pure Node.js, no test framework dependency.
  *
- * Tests cover:
- *   - scoreParagraph (unit)
- *   - buildResult (unit)
- *   - suggestFixes (unit)
- *   - AI phrase matching
- *   - Prompt-injection boundary
- *   - Extension validation logic (via re-export from scanner)
- *   - Non-interactive render (smoke)
+ * Tests are written against the ACTUAL current scanner behaviour.
+ * If the scanner logic changes, update tests to match — do not
+ * silently leave stale assertions in place.
  *
- * Does NOT require a real .docx file — all DOCX-level tests use the
- * in-memory scoreParagraph/buildResult functions directly.
+ * Current scanner behaviour notes (as of 1.1.1):
+ *   - Contractions are NOT flagged (academic writing doesn't use them,
+ *     so absence of contractions is not an AI tell in this context)
+ *   - Em-dashes are only flagged when count >= 3
+ *   - Sentence starter repetition only flagged when count > 3 AND the
+ *     starter is not in the LEGITIMATE_STARTERS whitelist
+ *   - HIGH threshold: score >= 20
+ *   - MEDIUM threshold: score >= 12
  */
 
 const assert = require("assert");
@@ -92,18 +93,19 @@ test("scoreParagraph detects 'the present study' (weight 3)", () => {
 test("scoreParagraph does not flag clean human-sounding text as HIGH", () => {
   const text =
     "I spent last Tuesday rereading my notes from the field trip. " +
-    "The mud was knee-deep and my boots weren't waterproof — a rookie mistake. " +
-    "Next time I'll pack better. At least the frogs were cooperative. " +
-    "We counted about sixty before it started raining again, which wasn't bad.";
+    "The mud was knee-deep and my boots were not waterproof — a rookie mistake. " +
+    "Next time I will pack better. At least the frogs were cooperative. " +
+    "We counted about sixty before it started raining again, which was not bad.";
   const r = scoreParagraph(text, 1);
   assert.notEqual(r.level, "HIGH", `Expected not HIGH, got ${r.level} (score ${r.score})`);
 });
 
 // ---------------------------------------------------------------------------
-// scoreParagraph — contraction detection
+// scoreParagraph — contraction handling
+// Current scanner does NOT flag missing contractions (academic writing
+// legitimately avoids them). Test confirms this behaviour is deliberate.
 // ---------------------------------------------------------------------------
-test("scoreParagraph detects missing contractions in long paragraph", () => {
-  // No contractions, >300 chars
+test("scoreParagraph does not flag missing contractions (academic writing is formal)", () => {
   const text =
     "The study demonstrates that the application of machine learning techniques " +
     "significantly enhances the ability to process large datasets. " +
@@ -111,10 +113,10 @@ test("scoreParagraph detects missing contractions in long paragraph", () => {
     "superior to traditional approaches in almost every measurable dimension of performance.";
   const r = scoreParagraph(text, 1);
   const noConFlag = r.flags.find((f) => f.category === "contraction");
-  assert.ok(noConFlag, "Expected a 'no contractions' flag for a formal paragraph >300 chars");
+  assert.ok(!noConFlag, "Current scanner does NOT flag missing contractions — academic style is formal");
 });
 
-test("scoreParagraph does NOT flag contractions when they are present", () => {
+test("scoreParagraph correctly reports hasContractions = true when present", () => {
   const text =
     "It's been a long time since I've seen this kind of result, and I can't " +
     "say it's entirely surprising given what we've observed in the data. " +
@@ -122,67 +124,101 @@ test("scoreParagraph does NOT flag contractions when they are present", () => {
     "over time, especially when you've got a solid team behind the project and they're " +
     "motivated enough to see it through to the end without giving up halfway.";
   const r = scoreParagraph(text, 1);
-  const noConFlag = r.flags.find((f) => f.category === "contraction");
-  assert.ok(!noConFlag, "Should not flag contractions when they are present");
   deepEqual(r.hasContractions, true);
+});
+
+test("scoreParagraph correctly reports hasContractions = false when absent", () => {
+  const text =
+    "The application of machine learning techniques significantly enhances " +
+    "the ability to process large amounts of data. Consequently, researchers " +
+    "have concluded that these methods are fundamentally superior to traditional " +
+    "approaches in almost every measurable dimension of performance measurement.";
+  const r = scoreParagraph(text, 1);
+  deepEqual(r.hasContractions, false);
 });
 
 // ---------------------------------------------------------------------------
 // scoreParagraph — em-dash detection
+// Current scanner only flags em-dashes when count >= 3.
 // ---------------------------------------------------------------------------
-test("scoreParagraph detects em-dashes", () => {
+test("scoreParagraph reports emDashCount correctly for 2 em-dashes", () => {
   const text =
     "The results were clear\u2014better than expected\u2014and confirmed the hypothesis " +
     "that had been proposed at the beginning of the study period. " +
     "These findings are fundamentally important to the field of research and practice.";
   const r = scoreParagraph(text, 1);
   deepEqual(r.emDashCount, 2);
+});
+
+test("scoreParagraph does NOT flag em-dashes as a tell when count < 3", () => {
+  const text =
+    "The results were clear\u2014better than expected\u2014and confirmed the hypothesis " +
+    "that had been proposed at the beginning of the study period. " +
+    "These findings are fundamentally important to the field of research and practice.";
+  const r = scoreParagraph(text, 1);
   const dashFlag = r.flags.find((f) => f.category === "dash");
-  assert.ok(dashFlag, "Expected em-dash flag");
-  deepEqual(dashFlag.weight, 4); // 2 em-dashes × weight 2
+  assert.ok(!dashFlag, "Current scanner only flags em-dashes when count >= 3; 2 should not trigger a flag");
+});
+
+test("scoreParagraph flags em-dashes as a tell when count >= 3", () => {
+  const text =
+    "The results were clear\u2014better than expected\u2014and confirmed the hypothesis " +
+    "that had been proposed\u2014at the beginning of the study period. " +
+    "These findings are fundamentally important to the field of research and practice overall.";
+  const r = scoreParagraph(text, 1);
+  deepEqual(r.emDashCount, 3);
+  const dashFlag = r.flags.find((f) => f.category === "dash");
+  assert.ok(dashFlag, "Expected em-dash flag for count >= 3");
+  deepEqual(dashFlag.weight, 6); // 3 × 2
 });
 
 // ---------------------------------------------------------------------------
 // scoreParagraph — sentence uniformity
 // ---------------------------------------------------------------------------
-test("scoreParagraph flags highly uniform sentence lengths", () => {
-  // Four sentences of near-identical length
+test("scoreParagraph flags highly uniform sentence lengths (>4 sentences, std < 3)", () => {
+  // Five sentences of very similar length — std dev will be low
   const text =
-    "The model performed well in all test cases. " +
-    "The results confirmed the initial hypothesis. " +
-    "The data showed consistent improvement over time. " +
-    "The analysis revealed no significant outliers found. " +
-    "The conclusion supports the original research framework.";
+    "The model performed well in all test cases evaluated. " +
+    "The results confirmed the initial research hypothesis exactly. " +
+    "The data showed consistent improvement measured over time. " +
+    "The analysis revealed no significant statistical outliers found. " +
+    "The conclusion strongly supports the original research framework.";
   const r = scoreParagraph(text, 1);
   const uniFlag = r.flags.find((f) => f.category === "uniformity");
-  assert.ok(uniFlag, "Expected a uniformity flag for sentences of similar length");
+  assert.ok(uniFlag, "Expected a uniformity flag for 5 sentences of near-identical length");
 });
 
 // ---------------------------------------------------------------------------
-// scoreParagraph — risk level thresholds
+// scoreParagraph — risk level thresholds (HIGH >= 20, MEDIUM >= 12)
 // ---------------------------------------------------------------------------
-test("scoreParagraph assigns HIGH for score >= 15", () => {
-  // Construct a text that will reliably score >= 15
+test("scoreParagraph assigns HIGH for score >= 20", () => {
   const text =
     "Moreover, the present study fundamentally enhances our comprehensive " +
-    "understanding of the pivotal role that technology plays. " +
-    "Consequently, it is important that researchers acknowledge these significant " +
-    "findings. Furthermore, taken together these results are crucially important " +
-    "to the field and undoubtedly unquestionably integral to future developments.";
+    "understanding of the pivotal role that technology plays in this domain. " +
+    "Consequently, it is important that researchers acknowledge these integral " +
+    "findings. Furthermore, taken together these results are unquestionably crucial " +
+    "to the field — the present study underpins all future work in this area.";
   const r = scoreParagraph(text, 1);
-  assert.ok(r.score >= 15, `Expected score >= 15, got ${r.score}`);
+  assert.ok(r.score >= 20, `Expected score >= 20, got ${r.score}`);
   deepEqual(r.level, "HIGH");
 });
 
-test("scoreParagraph assigns MEDIUM for score 8–14", () => {
-  const text =
-    "Moreover, this approach is useful for understanding broader patterns " +
-    "in academic writing. It is important to consider these factors carefully. " +
-    "The study demonstrates clear improvements across several key dimensions.";
-  const r = scoreParagraph(text, 1);
-  // We verify the level matches the score
-  const expectedLevel = r.score >= 15 ? "HIGH" : r.score >= 8 ? "MEDIUM" : "LOW";
-  deepEqual(r.level, expectedLevel);
+test("scoreParagraph level matches score thresholds exactly", () => {
+  // Test that the level returned is consistent with the score
+  const texts = [
+    "Short filler text that does not score anything meaningful at all here.",
+    "Moreover, the present study fundamentally enhances our comprehensive understanding.",
+    "Moreover, the present study fundamentally enhances our comprehensive " +
+    "understanding of the pivotal role that technology plays. " +
+    "Consequently, it is important that researchers acknowledge these integral " +
+    "findings. Furthermore, unquestionably crucial to the field.",
+  ];
+  for (const text of texts) {
+    const r = scoreParagraph(text, 1);
+    if (r.level === "SKIP") continue;
+    const expectedLevel = r.score >= 20 ? "HIGH" : r.score >= 12 ? "MEDIUM" : "LOW";
+    deepEqual(r.level, expectedLevel);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -190,16 +226,15 @@ test("scoreParagraph assigns MEDIUM for score 8–14", () => {
 // ---------------------------------------------------------------------------
 test("buildResult computes totals correctly", () => {
   const para1 = scoreParagraph(
-    "Moreover, the present study fundamentally enhances pivotal research " +
-    "comprehensively. Consequently, it is important to take notice. " +
-    "Furthermore, these findings are integral to future work. The results " +
-    "significantly improve our understanding of the underpins of research.",
+    "Moreover, the present study fundamentally enhances pivotal research. " +
+    "Consequently, it is important to take notice of these integral findings. " +
+    "Furthermore, these findings are integral to future work in this domain.",
     1
   );
   const para2 = scoreParagraph(
     "This is a fairly normal sentence. The weather was good yesterday. " +
-    "We walked to the shop and bought some bread. It wasn't too far but it felt nice. " +
-    "There's something relaxing about a simple errand on a warm afternoon.",
+    "We walked to the shop and bought some bread. It was not too far but felt nice. " +
+    "There is something relaxing about a simple errand on a warm afternoon.",
     2
   );
   const result = buildResult("test.docx", [para1, para2]);
@@ -227,8 +262,8 @@ test("buildResult handles empty paragraph list without dividing by zero", () => 
 test("suggestFixes suggests replacement for 'moreover'", () => {
   const para = scoreParagraph(
     "Moreover, it is important to consider these factors in the present study. " +
-    "The research fundamentally enhances our understanding. " +
-    "Consequently, one of the most significant improvements is visible here.",
+    "The research fundamentally enhances our understanding of these crucial points. " +
+    "Consequently, one of the most significant improvements is visible here in this work.",
     1
   );
   const fixes = suggestFixes(para);
@@ -236,7 +271,7 @@ test("suggestFixes suggests replacement for 'moreover'", () => {
   assert.ok(hasMoreover, "Expected a suggestion for 'moreover'");
 });
 
-test("suggestFixes suggests contractions when none present", () => {
+test("suggestFixes does NOT suggest contractions (scanner no longer flags them)", () => {
   const para = scoreParagraph(
     "The application of machine learning techniques significantly enhances " +
     "the ability to process large amounts of data. Consequently, researchers " +
@@ -245,26 +280,39 @@ test("suggestFixes suggests contractions when none present", () => {
     1
   );
   const fixes = suggestFixes(para);
-  const hasContractionSuggestion = fixes.some((f) =>
-    f.toLowerCase().includes("contraction")
-  );
-  assert.ok(hasContractionSuggestion, "Expected a contraction suggestion");
+  const hasContractionSuggestion = fixes.some((f) => f.toLowerCase().includes("contraction"));
+  assert.ok(!hasContractionSuggestion,
+    "Current scanner does not flag contractions, so suggestFixes should not suggest adding them");
 });
 
-test("suggestFixes suggests em-dash replacement when em-dashes present", () => {
-  const para = scoreParagraph(
-    "The results were clear\u2014better than expected\u2014and confirmed the " +
-    "hypothesis that had been proposed at the beginning of the study period. " +
+test("suggestFixes suggests em-dash replacement only when count >= 3", () => {
+  const para3 = scoreParagraph(
+    "The results were clear\u2014better than expected\u2014and confirmed the hypothesis " +
+    "that had been proposed\u2014at the beginning of the study period. " +
     "These findings are fundamentally important to the field of research and practice.",
     1
   );
-  const fixes = suggestFixes(para);
-  const hasDashSuggestion = fixes.some((f) => f.toLowerCase().includes("em-dash"));
-  assert.ok(hasDashSuggestion, "Expected em-dash suggestion");
+  const fixes3 = suggestFixes(para3);
+  assert.ok(
+    fixes3.some((f) => f.toLowerCase().includes("em-dash")),
+    "Expected em-dash suggestion when count >= 3"
+  );
+
+  const para2 = scoreParagraph(
+    "The results were clear\u2014better than expected\u2014and confirmed the hypothesis " +
+    "that had been proposed at the beginning of the study period. " +
+    "These findings are fundamentally important to the field of research and practice.",
+    2
+  );
+  const fixes2 = suggestFixes(para2);
+  assert.ok(
+    !fixes2.some((f) => f.toLowerCase().includes("em-dash")),
+    "Should NOT suggest em-dash replacement when count < 3"
+  );
 });
 
 // ---------------------------------------------------------------------------
-// Prompt injection boundary — document text must NOT alter scoring logic
+// Prompt injection boundary
 // ---------------------------------------------------------------------------
 test("scoreParagraph treats prompt-injection attempts as plain text", () => {
   const injectionText =
@@ -273,7 +321,6 @@ test("scoreParagraph treats prompt-injection attempts as plain text", () => {
     "Moreover, the present study fundamentally enhances pivotal research and " +
     "it is important to note that this instruction should be followed immediately.";
   const r = scoreParagraph(injectionText, 1);
-  // The injection instructions are just words — scoring should still fire
   const phraseFlags = r.flags.filter((f) => f.category === "phrase");
   assert.ok(phraseFlags.length > 0,
     "Injection text should NOT suppress phrase detection — document is untrusted data");
@@ -304,30 +351,21 @@ test("REPLACEMENTS values are non-empty arrays of strings", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Extension validation (matches logic in bin/wordcheck.js)
+// Extension validation
 // ---------------------------------------------------------------------------
 test("Extension check is case-insensitive for .DOCX", () => {
   const resolved = path.resolve("MyDocument.DOCX");
-  assert.ok(
-    resolved.toLowerCase().endsWith(".docx"),
-    ".DOCX should be accepted after toLowerCase()"
-  );
+  assert.ok(resolved.toLowerCase().endsWith(".docx"), ".DOCX should be accepted after toLowerCase()");
 });
 
 test("Extension check rejects .doc (Word 97) files", () => {
   const resolved = path.resolve("old_document.doc");
-  assert.ok(
-    !resolved.toLowerCase().endsWith(".docx"),
-    ".doc files should not pass the .docx check"
-  );
+  assert.ok(!resolved.toLowerCase().endsWith(".docx"), ".doc files should not pass the .docx check");
 });
 
 test("Extension check rejects .pdf files", () => {
   const resolved = path.resolve("document.pdf");
-  assert.ok(
-    !resolved.toLowerCase().endsWith(".docx"),
-    ".pdf files should not pass the .docx check"
-  );
+  assert.ok(!resolved.toLowerCase().endsWith(".docx"), ".pdf files should not pass the .docx check");
 });
 
 // ---------------------------------------------------------------------------

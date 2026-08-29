@@ -4,17 +4,20 @@ EXIT:0
   ✓  scoreParagraph detects 'moreover' as AI phrase
   ✓  scoreParagraph detects 'the present study' (weight 3)
   ✓  scoreParagraph does not flag clean human-sounding text as HIGH
-  ✓  scoreParagraph detects missing contractions in long paragraph
-  ✓  scoreParagraph does NOT flag contractions when they are present
-  ✓  scoreParagraph detects em-dashes
-  ✓  scoreParagraph flags highly uniform sentence lengths
-  ✓  scoreParagraph assigns HIGH for score >= 15
-  ✓  scoreParagraph assigns MEDIUM for score 8–14
+  ✓  scoreParagraph does not flag missing contractions (academic writing is formal)
+  ✓  scoreParagraph correctly reports hasContractions = true when present
+  ✓  scoreParagraph correctly reports hasContractions = false when absent
+  ✓  scoreParagraph reports emDashCount correctly for 2 em-dashes
+  ✓  scoreParagraph does NOT flag em-dashes as a tell when count < 3
+  ✓  scoreParagraph flags em-dashes as a tell when count >= 3
+  ✓  scoreParagraph flags highly uniform sentence lengths (>4 sentences, std < 3)
+  ✓  scoreParagraph assigns HIGH for score >= 20
+  ✓  scoreParagraph level matches score thresholds exactly
   ✓  buildResult computes totals correctly
   ✓  buildResult handles empty paragraph list without dividing by zero
   ✓  suggestFixes suggests replacement for 'moreover'
-  ✓  suggestFixes suggests contractions when none present
-  ✓  suggestFixes suggests em-dash replacement when em-dashes present
+  ✓  suggestFixes does NOT suggest contractions (scanner no longer flags them)
+  ✓  suggestFixes suggests em-dash replacement only when count >= 3
   ✓  scoreParagraph treats prompt-injection attempts as plain text
   ✓  AI_PHRASES contains only positive integer weights
   ✓  REPLACEMENTS values are non-empty arrays of strings
@@ -22,6 +25,6 @@ EXIT:0
   ✓  Extension check rejects .doc (Word 97) files
   ✓  Extension check rejects .pdf files
 
-  Results: 22 passed, 0 failed
+  Results: 25 passed, 0 failed
 
   All tests passed.

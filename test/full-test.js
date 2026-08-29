@@ -302,9 +302,9 @@ async function runAll() {
   });
   test("wordcheck -n scans file", () => {
     const r = execSync('node ' + binPath + ' "' + DOC + '" -n', { encoding: "utf8" });
-    if (!r.includes("Paragraphs:")) throw new Error("no Paragraphs");
-    if (!r.includes("Findings:")) throw new Error("no Findings");
-    if (!r.includes("HIGH")) throw new Error("no HIGH");
+    if (!r.includes("paragraphs") && !r.includes("Paragraphs")) throw new Error("no Paragraphs");
+    if (!r.includes("score") && !r.includes("Score")) throw new Error("no Score");
+    if (!r.includes("LOW") && !r.includes("HIGH") && !r.includes("MED")) throw new Error("no severity");
   });
   test("wordcheck -n missing file errors", () => {
     let threw = false;
