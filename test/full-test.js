@@ -294,7 +294,7 @@ async function runAll() {
   const binPath = path.join(ROOT, "bin", "wordcheck.js");
   test("wordcheck --version works", () => {
     const r = execSync("node " + binPath + " --version", { encoding: "utf8" }).trim();
-    if (!r.includes("v1.16.0")) throw new Error("got: " + r);
+    if (!r.includes("v1.18.0")) throw new Error("got: " + r);
   });
   test("wordcheck --help works", () => {
     const r = execSync("node " + binPath + " --help", { encoding: "utf8" });
