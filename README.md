@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/banner.svg" alt="WordCheck - AI-Tell Scanner for Word Documents" width="100%">
+  <img src="./assets/banner.svg" alt="WordCheck - AI Agent for Word Documents" width="100%">
 </p>
 
 <p align="center">
@@ -18,18 +18,12 @@
 
 # wordcheck
 
-AI-Tell Scanner for Word Documents. Detect AI-generated content patterns in `.docx` files and get actionable fix suggestions.
+Agentic AI for Word documents — scan, analyze, edit, and improve `.docx` files with conversational AI and live Word MCP integration.
 
-Use it when you need to check whether a Word document reads like human-written text or contains patterns typical of AI-generated content:
-
-* Per-paragraph risk scoring (HIGH / MEDIUM / LOW)
-* AI phrase detection with weighted scoring
-* Sentence structure and uniformity analysis
-* Contraction and em-dash pattern checks
-* Interactive detail view with fix suggestions
+WordCheck is a full terminal-based AI agent that scans documents for AI-generated writing patterns, then lets you fix them through natural conversation. It connects to your preferred LLM (OpenCode, OpenAI, Anthropic, Google, Ollama, and more) and uses MCP (Model Context Protocol) to read and edit Word documents directly.
 
 > [!NOTE]
-> This is a **pattern-based heuristic scanner**, not an AI detector. It identifies writing patterns commonly associated with LLM-generated text. It does **not** connect to any external API.
+> The scanner is a **pattern-based heuristic** — it identifies writing patterns commonly associated with LLM-generated text (phrase repetition, sentence uniformity, missing contractions). It is not an AI classifier. The AI chat features require an external LLM provider.
 
 ## Install
 
@@ -42,100 +36,21 @@ npm install -g @frekijosh/wordcheck
 ## Quick start
 
 ```bash
-# Interactive mode
+# Open the TUI and scan a document
 wordcheck my_paper.docx
 
-# Non-interactive (for piping/CI)
+# Non-interactive scan (no TUI, prints results)
 wordcheck my_paper.docx -n
 ```
 
-## Usage
+## What it does
 
-```
-wordcheck <file.docx> [options]
+### Scan and score
 
-Options:
-  -n, --noninteractive   Non-interactive mode (shows all paragraphs + recommendations)
-  -v, --version          Show version
-  -h, --help             Show help
-```
+Analyzes every paragraph in a `.docx` file and assigns a risk score based on 25+ weighted heuristics:
 
-### Interactive commands
-
-| Command | Description |
-|---------|-------------|
-| `<number>` | View detailed analysis for a specific paragraph |
-| `all` | Show all paragraphs including LOW risk |
-| `fix` | Show recommendations for the whole document |
-| `rescan` | Re-analyze the file (use after making edits) |
-| `quit` | Exit |
-
-### Example session
-
-```
-$ wordcheck my_paper.docx
-
-    __        __   _    _____                  _             _
-   \ \      / /__| |__|_   _|__ _ __ _ __ ___| |_ ___  __ _| |
-    \ \ /\ / / _ \ '_ \| | |/ _ \ '__| '_ ` _ \ __/ _ \/ _` | |
-     \ V  V /  __/ |_) | | |  __/ |  | | | | | ||  __/ (_| | |
-      \_/\_/ \___|_.__/|_|_|\___|_|  |_| |_| |_|\\___|\\__,_|_|
-
-  AI-Tell Scanner for Word Documents
-
- ╭ File Overview ───────────────────────────────────────────╮
- │   File:            my_paper.docx                         │
- │   Body Paragraphs: 24                                    │
- │   Total Score:     87                                    │
- │   AI Likelihood:   45%                                   │
- ╰──────────────────────────────────────────────────────────╯
-
-  Risk Breakdown
-  ----------------------------------------
-  HIGH      2  ██
-  MEDIUM    6  ███████
-  LOW      16  ████████████████████████
-
-  Paragraph Analysis
-  ----------------------------------------------------------------------
-  #     Risk       Score   Preview
-  ----------------------------------------------------------------------
-  1     MEDIUM     12      In recent years, the rapid growth of e-commerce...
-  3     HIGH       18      Moreover, the present study aims to examine...
-
-  Commands: <number> = detail | all = show low | fix = recs | rescan | quit
-
-wordcheck> 3
-
-  Paragraph 3 - HIGH (score: 18)
-  ------------------------------------------------------------
-  ┌──────────────────────────────────────────────────────────┐
-  │ Moreover, the present study aims to examine the...       │
-  └──────────────────────────────────────────────────────────┘
-
-  Words:        145
-  Sentences:    6
-  Citations:    2
-  Contractions: No
-  Em-dashes:    0
-
-  AI Tells Found:
-    > "moreover" x1 (+3)
-    > "the present study" x1 (+3)
-    > "aims to" x1 (+2)
-    > no contractions (+3)
-    > uniform sentences (std=3.2) (+5)
-
-  Suggested Fixes:
-    1. Replace "the present study" with: this research, the current work
-    2. Replace "moreover" with: also, besides, on top of that
-    3. Add contractions (don't, it's, can't, etc.)
-```
-
-## What it checks
-
-| Category | What it looks for | Weight |
-|----------|-------------------|--------|
+| Category | What it detects | Weight |
+|----------|-----------------|--------|
 | **AI phrases** | "moreover", "furthermore", "present study", "comprehensive", etc. | 1–3 per phrase |
 | **Sentence starters** | Repeated opening words across sentences | 2 per repeat |
 | **Uniformity** | Low standard deviation in sentence length | 2–5 |
@@ -145,6 +60,102 @@ wordcheck> 3
 | **Contractions** | Long paragraphs with no contractions | 3 |
 
 Risk levels: **HIGH** ≥ 15, **MEDIUM** ≥ 8, **LOW** < 8
+
+### Fix with AI chat
+
+Type anything not starting with `/` and it goes to your connected LLM. The AI can call 24 document tools autonomously:
+
+- **Search and replace** text in the document
+- **Add paragraphs, headings, tables** with formatting
+- **Delete paragraphs**, format text (bold, italic, color)
+- **Chain operations** with `word_modify` (multiple edits in one call with progress tracking)
+- **Create new documents**, copy, convert to PDF
+- **Apply style guide** formatting (WriteTechHub standards)
+
+The agent loops tool calls automatically — it keeps executing until the AI produces a final response, so complex multi-step edits complete without disconnecting.
+
+### Rich terminal UI
+
+Full alternate-screen TUI built from scratch:
+
+- **Scrollable content** with keyboard (`j`/`k`, `g`/`G`, Page Up/Down) and mouse wheel
+- **Command palette** — type `/` to see all commands, Tab to select
+- **Interactive modals** — Provider picker, Model picker, Settings (all searchable, clickable, keyboard-navigable)
+- **Tool progress overlay** — shows which MCP tool is running with status icons
+- **Side-by-side diff** — preview changes before applying fixes
+- **Markdown rendering** — AI responses render with headers, tables, code blocks, and styled prefixes
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `/findings` | Show all findings in a table |
+| `/new` | Show only unreviewed findings |
+| `/approve all` | Approve all fixable findings |
+| `/approve <n>` | Approve finding #n |
+| `/skip <n>` | Skip finding #n |
+| `/fix all` | Apply all approved fixes |
+| `/fix <n>` | Apply fix for finding #n |
+| `/diff <n>` | Side-by-side diff preview |
+| `/para <n>` | Inspect paragraph #n |
+| `/rescan` | Re-analyze the document |
+| `/settings` | Open provider/model/API configuration |
+| `/model` | Open model picker |
+| `/open` | Open document in Microsoft Word |
+| `/status` | Show connection status |
+| `/clear` | Clear screen |
+| `/help` | Show all commands |
+| `/quit` | Exit |
+| *(any text)* | Send to AI chat |
+
+## AI providers
+
+WordCheck supports 10 providers out of the box:
+
+| Provider | Default Model | Notes |
+|----------|---------------|-------|
+| **OpenCode Zen** | `mimo-v2.5-free` | Free tier, recommended |
+| **OpenCode Go** | `mimo-v2.5` | $10/mo, more models |
+| **OpenAI** | `gpt-4o-mini` | Requires API key |
+| **GitHub Copilot** | `gpt-4o` | Uses Copilot auth |
+| **Anthropic** | `claude-sonnet-4-6` | Requires API key |
+| **Google** | `gemini-2.0-flash` | Requires API key |
+| **302.AI** | `gpt-4o` | Requires API key |
+| **Abacus** | `gpt-4o` | Requires API key |
+| **Ollama** | `llama3.1` | Local, no API key needed |
+| **Custom** | — | Enter your own base URL |
+
+Switch providers or models anytime with `/settings` or `/model`. API keys are stored in `~/.wordcheck.json`.
+
+## Configuration
+
+On first launch, WordCheck creates `~/.wordcheck.json`:
+
+```json
+{
+  "api": {
+    "provider": "opencode-go",
+    "baseUrl": "https://opencode.ai/zen/go/v1",
+    "model": "mimo-v2.5-pro",
+    "apiKey": "",
+    "maxTokens": 4096,
+    "temperature": 0.3
+  }
+}
+```
+
+Change settings interactively with `/settings`, or edit the file directly.
+
+## Usage
+
+```
+wordcheck <file.docx> [options]
+
+Options:
+  -n, --noninteractive   Non-interactive mode (print results, no TUI)
+  -v, --version          Show version
+  -h, --help             Show help
+```
 
 ## Contributing
 
