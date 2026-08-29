@@ -1,6 +1,6 @@
 {
   "name": "@frekijosh/wordcheck",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Agentic AI for Word documents — scan, analyze, edit, and improve .docx files with conversational AI and live Word MCP integration",
   "main": "lib/scanner.js",
   "bin": {
