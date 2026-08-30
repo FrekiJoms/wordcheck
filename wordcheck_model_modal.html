@@ -1,0 +1,413 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d0d14; }
+  .term {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    background: #0d0d14;
+    color: #44444a;
+    padding: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #1a1a2a;
+    min-height: 520px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .header {
+    padding: 10px 16px 6px;
+    border-bottom: 1px solid #1a1a28;
+  }
+  .wordmark { color: #9AA9FF; font-size: 11px; letter-spacing: 1px; }
+  .subtitle { color: #6272A4; font-size: 11px; margin-top: 2px; }
+  .content-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  .overlay {
+    position: absolute; inset: 0;
+    background: #0d0d14;
+    display: flex;
+    flex-direction: column;
+  }
+  .overlay-row {
+    height: 18px;
+    line-height: 18px;
+    padding: 0 14px;
+    white-space: pre;
+    color: #44444a;
+    font-size: 12px;
+  }
+  .modal-wrap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 6px;
+  }
+  .modal {
+    width: 420px;
+    background: #1e1e2e;
+    border: 0.5px solid #313244;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+  }
+  .modal-title {
+    padding: 4px 8px;
+    background: #1e1e2e;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 0.5px solid #313244;
+  }
+  .modal-title .left { display: flex; gap: 6px; align-items: baseline; }
+  .modal-title .t-title { color: #F8F8F2; font-weight: bold; letter-spacing: 0.5px; }
+  .modal-title .t-prov { color: #6272A4; }
+  .modal-title .t-count { color: #6272A4; }
+  .modal-title .t-esc { color: #6272A4; }
+  .search-row {
+    padding: 3px 8px;
+    background: #1e1e2e;
+    border-bottom: 0.5px solid #313244;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #6272A4;
+  }
+  .search-cursor { background: #F8F8F2; color: #1e1e2e; display: inline-block; width: 7px; }
+  .sep {
+    padding: 2px 8px;
+    color: #6272A4;
+    background: #1e1e2e;
+    overflow: hidden;
+  }
+  .item {
+    padding: 3px 8px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    white-space: pre;
+    color: #F8F8F2;
+    background: #1e1e2e;
+    cursor: pointer;
+    transition: background 0.08s;
+  }
+  .item:hover { background: #282840; }
+  .item.hovered { background: #313244; }
+  .item .check { color: #50FA7B; width: 14px; display: inline-block; }
+  .item .nocheck { width: 14px; display: inline-block; }
+  .item .label { flex: 1; }
+  .item .label.bold { color: #F8F8F2; font-weight: bold; }
+  .item .badge { color: #6272A4; }
+  .item .prov { color: #6272A4; }
+  .scroll-hint {
+    padding: 3px 8px;
+    color: #6272A4;
+    background: #1e1e2e;
+    font-size: 11px;
+  }
+  .footer {
+    padding: 3px 8px;
+    color: #6272A4;
+    background: #1e1e2e;
+    border-top: 0.5px solid #313244;
+    font-size: 11px;
+  }
+  .group-header {
+    padding: 3px 8px;
+    color: #50FA7B;
+    background: #1e1e2e;
+    font-size: 11px;
+  }
+  .group-header.premium { color: #F1FA8C; }
+  .group-header.go { color: #8BE9FD; }
+  .statusbar {
+    padding: 3px 14px;
+    background: #0d0d14;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    border-top: 1px solid #1a1a28;
+    color: #44444a;
+  }
+  .statusbar .dot { color: #FF79C6; }
+  .inputbar {
+    padding: 4px 14px;
+    color: #44444a;
+    font-size: 12px;
+    background: #0d0d14;
+    border-top: 1px solid #1a1a28;
+  }
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #111120;
+    border-bottom: 1px solid #1a1a28;
+    font-size: 11px;
+  }
+  .tab { padding: 2px 10px; color: #6272A4; cursor: pointer; border-radius: 3px; }
+  .tab.active { color: #F8F8F2; background: #1e1e2e; }
+  .note {
+    font-size: 11px;
+    color: #50FA7B;
+    background: #0d2010;
+    border: 0.5px solid #1a4a20;
+    border-radius: 4px;
+    padding: 6px 12px;
+    margin-top: 6px;
+    width: 420px;
+    font-family: monospace;
+  }
+  .note .label { color: #6272A4; }
+</style>
+
+<div class="term">
+  <div class="header">
+    <div class="wordmark">WORDCHECK</div>
+    <div class="subtitle">AI-Tell Scanner for Word Documents · WordCheck Agent</div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab" onclick="showView('provider')">Providers</div>
+    <div class="tab active" id="tab-model" onclick="showView('model')">Model picker</div>
+    <div class="tab" onclick="showView('settings')">Settings</div>
+  </div>
+  <div class="content-area" id="main-area">
+
+    <div class="overlay" id="overlay-model">
+      <div class="overlay-row"> </div>
+      <div class="overlay-row"> </div>
+      <div class="overlay-row"> </div>
+      <div class="modal-wrap">
+        <div class="modal">
+          <div class="modal-title">
+            <div class="left">
+              <span class="t-title">MODEL</span>
+              <span class="t-prov">  OpenCode Zen</span>
+              <span class="t-count" id="model-count"> 12/63</span>
+            </div>
+            <span class="t-esc">esc</span>
+          </div>
+          <div class="search-row">
+            <span>⌕</span>
+            <span id="search-text" style="color:#6272A4">type to search...</span>
+          </div>
+          <div class="sep"><span style="color:#313244">────────────────────────────────────────────────────</span></div>
+          <div id="model-list"></div>
+          <div class="footer">↑↓ select &nbsp; Enter pick &nbsp; Ctrl+A providers &nbsp; type search &nbsp; Esc cancel</div>
+        </div>
+        <div class="note" id="fix-note">
+          <span class="label">// fixed: </span>width locked from <strong style="color:#F8F8F2">all 63 models</strong> on open — never recalculated from visible slice
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="overlay-provider" style="display:none">
+      <div class="overlay-row"> </div>
+      <div class="overlay-row"> </div>
+      <div class="overlay-row"> </div>
+      <div class="modal-wrap">
+        <div class="modal">
+          <div class="modal-title">
+            <div class="left">
+              <span class="t-title">PROVIDERS</span>
+              <span class="t-count"> 10/10</span>
+            </div>
+            <span class="t-esc">esc</span>
+          </div>
+          <div class="search-row"><span>⌕</span><span style="color:#6272A4">type to search...</span></div>
+          <div class="sep"><span style="color:#313244">────────────────────────────────────────────────────</span></div>
+          <div style="padding:3px 8px;color:#FF79C6;font-weight:bold;background:#1e1e2e;font-size:11px"> Popular</div>
+          <div class="item hovered"><span class="check">✓ </span><span class="label bold">OpenCode Zen</span><span class="badge">  (Recommended)  Best quality - free tier</span></div>
+          <div class="item"><span class="nocheck">  </span><span class="label">OpenCode Go</span><span class="badge">  $10/mo  Low cost subscription</span></div>
+          <div class="item"><span class="nocheck">  </span><span class="label">OpenAI</span><span class="badge">  (API key)</span></div>
+          <div class="item"><span class="nocheck">  </span><span class="label">GitHub Copilot</span></div>
+          <div class="item"><span class="nocheck">  </span><span class="label">Anthropic</span><span class="badge">  (API key)</span></div>
+          <div class="item"><span class="nocheck">  </span><span class="label">Google</span></div>
+          <div style="padding:3px 8px;color:#FF79C6;font-weight:bold;background:#1e1e2e;font-size:11px"> Providers</div>
+          <div class="item"><span class="nocheck">  </span><span class="label">302.AI</span></div>
+          <div class="item"><span class="nocheck">  </span><span class="label">Abacus</span></div>
+          <div class="item"><span class="nocheck">  </span><span class="label">Ollama</span><span class="badge">  (local)</span></div>
+          <div class="item"><span class="nocheck">  </span><span class="label">Custom</span><span class="badge">  (enter URL)</span></div>
+          <div class="footer">↑↓ navigate &nbsp; Enter select &nbsp; type to search &nbsp; Esc cancel</div>
+        </div>
+        <div class="note">
+          <span class="label">// fixed: </span>width from <strong style="color:#F8F8F2">all items</strong> on open — stable during scroll
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="overlay-settings" style="display:none">
+      <div class="overlay-row"> </div>
+      <div class="overlay-row"> </div>
+      <div class="overlay-row"> </div>
+      <div class="modal-wrap">
+        <div class="modal">
+          <div class="modal-title">
+            <div class="left"><span style="color:#FF79C6;font-weight:bold">SETTINGS</span></div>
+            <span class="t-esc">esc</span>
+          </div>
+          <div class="sep"><span style="color:#313244">────────────────────────────────────────────────────</span></div>
+          <div class="item"><span style="color:#8BE9FD">1. </span><span style="color:#6272A4;width:110px;display:inline-block">Provider      </span><span style="color:#F8F8F2">opencode-zen</span></div>
+          <div class="item"><span style="color:#8BE9FD">2. </span><span style="color:#6272A4;width:110px;display:inline-block">Base URL      </span><span style="color:#F8F8F2">https://opencode.ai/zen/v1</span></div>
+          <div class="item hovered"><span style="color:#8BE9FD">3. </span><span style="color:#F8F8F2;width:110px;display:inline-block;font-weight:bold">Model         </span><span style="color:#F8F8F2">nemotron-3.5-lightning-free</span></div>
+          <div class="item"><span style="color:#8BE9FD">4. </span><span style="color:#6272A4;width:110px;display:inline-block">API Key       </span><span style="color:#6272A4">****************...</span></div>
+          <div class="item"><span style="color:#8BE9FD">5. </span><span style="color:#6272A4;width:110px;display:inline-block">Max Tokens    </span><span style="color:#F8F8F2">4096</span></div>
+          <div class="item"><span style="color:#8BE9FD">6. </span><span style="color:#6272A4;width:110px;display:inline-block">Temperature   </span><span style="color:#F8F8F2">0.3</span></div>
+          <div class="sep"><span style="color:#313244">────────────────────────────────────────────────────</span></div>
+          <div style="padding:3px 8px;color:#6272A4;background:#1e1e2e;font-size:11px">  6 settings</div>
+          <div class="footer">click or ↑↓/number to edit &nbsp; Ctrl+V paste &nbsp; Esc to close</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="statusbar">
+    <span><span class="dot">●</span> wordcheck &nbsp; v1.32.0</span>
+    <span>ready</span>
+  </div>
+  <div class="inputbar" id="input-hint">↑↓ select &nbsp; Enter pick &nbsp; type to search</div>
+</div>
+
+<script>
+const models = [
+  { id: 'nemotron-3.5-lightning-free', group: 'Free', active: true },
+  { id: 'gpt-4o-mini', group: 'Free' },
+  { id: 'gpt-4.1-mini', group: 'Free' },
+  { id: 'llama-3.3-70b', group: 'Free' },
+  { id: 'deepseek-v3', group: 'Free' },
+  { id: 'gpt-4o', group: 'Go' },
+  { id: 'gpt-4.1', group: 'Go' },
+  { id: 'claude-sonnet-4-6', group: 'Go' },
+  { id: 'gemini-2.5-pro', group: 'Go' },
+  { id: 'gpt-5', group: 'Premium' },
+  { id: 'gpt-5.1-codex-max', group: 'Premium' },
+  { id: 'gpt-5.3-codex-spark', group: 'Premium' },
+  { id: 'grok-4.6', group: 'Premium' },
+  { id: 'grok-4.5', group: 'Premium' },
+  { id: 'gpt-5.4-mini', group: 'Premium' },
+  { id: 'gpt-5.4-nano', group: 'Premium' },
+];
+
+let hovered = 0;
+let scrollOffset = 0;
+let searchText = '';
+let filtered = models.slice();
+const VISIBLE = 8;
+
+function renderGroup(group) {
+  if (!group) return '';
+  const cls = group === 'Free' ? 'group-header' : group === 'Go' ? 'group-header go' : 'group-header premium';
+  const col = group === 'Free' ? '#50FA7B' : group === 'Go' ? '#8BE9FD' : '#F1FA8C';
+  return `<div class="${cls}" style="color:${col};font-size:11px;padding:3px 8px;background:#1e1e2e">  ${group} models</div>`;
+}
+
+function render() {
+  const list = document.getElementById('model-list');
+  const cnt = document.getElementById('model-count');
+  cnt.textContent = ` ${filtered.length}/${models.length}`;
+
+  const canUp = scrollOffset > 0;
+  const canDown = scrollOffset + VISIBLE < filtered.length;
+  let html = '';
+
+  if (canUp) html += `<div class="scroll-hint">  ▲ more above</div>`;
+
+  let lastGroup = '';
+  let rendered = 0;
+  let maxVis = VISIBLE - (canUp ? 1 : 0);
+
+  for (let i = scrollOffset; i < filtered.length && rendered < maxVis; i++) {
+    const m = filtered[i];
+    if (m.group && m.group !== lastGroup) {
+      lastGroup = m.group;
+      html += renderGroup(m.group);
+      rendered++;
+    }
+    if (rendered >= maxVis) break;
+    const isH = i === hovered;
+    const isA = m.active;
+    const bg = isH ? 'background:#313244' : 'background:#1e1e2e';
+    const labelStyle = isH ? 'color:#F8F8F2;font-weight:bold' : 'color:#F8F8F2';
+    html += `<div class="item" style="${bg}" onmouseenter="hover(${i})" onclick="pick(${i})">`;
+    html += `<span style="color:#50FA7B;width:14px;display:inline-block">${isA ? '✓' : ' '} </span>`;
+    html += `<span style="${labelStyle}">${m.id}</span>`;
+    html += `<span style="color:#6272A4"> [${m.group}]</span>`;
+    html += `</div>`;
+    rendered++;
+  }
+
+  if (canDown) html += `<div class="scroll-hint">  ▼ more below</div>`;
+  list.innerHTML = html;
+}
+
+function hover(i) {
+  hovered = i;
+  render();
+}
+
+function pick(i) {
+  models.forEach(m => m.active = false);
+  const m = filtered[i];
+  if (m) m.active = true;
+  render();
+}
+
+document.addEventListener('keydown', e => {
+  const view = document.getElementById('overlay-model');
+  if (view.style.display === 'none') return;
+  if (e.key === 'ArrowDown') {
+    if (hovered < filtered.length - 1) {
+      hovered++;
+      if (hovered >= scrollOffset + VISIBLE) scrollOffset = hovered - VISIBLE + 1;
+    }
+    render(); e.preventDefault();
+  } else if (e.key === 'ArrowUp') {
+    if (hovered > 0) {
+      hovered--;
+      if (hovered < scrollOffset) scrollOffset = hovered;
+    }
+    render(); e.preventDefault();
+  } else if (e.key === 'Backspace') {
+    searchText = searchText.slice(0, -1);
+    applyFilter();
+  } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+    searchText += e.key;
+    applyFilter();
+  }
+});
+
+function applyFilter() {
+  const q = searchText.toLowerCase();
+  filtered = q ? models.filter(m => m.id.toLowerCase().includes(q)) : models.slice();
+  hovered = 0; scrollOffset = 0;
+  const el = document.getElementById('search-text');
+  if (searchText) {
+    el.innerHTML = `<span style="color:#F8F8F2">${searchText}</span><span style="background:#F8F8F2;color:#1e1e2e;display:inline-block;width:7px"> </span>`;
+  } else {
+    el.textContent = 'type to search...';
+    el.style.color = '#6272A4';
+  }
+  render();
+}
+
+function showView(v) {
+  document.getElementById('overlay-model').style.display = v === 'model' ? 'flex' : 'none';
+  document.getElementById('overlay-provider').style.display = v === 'provider' ? 'flex' : 'none';
+  document.getElementById('overlay-settings').style.display = v === 'settings' ? 'flex' : 'none';
+  document.getElementById('fix-note').style.display = v === 'model' ? 'block' : 'none';
+  ['tab-model'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['provider','model','settings'][i] === v);
+  });
+  const hints = { model: '↑↓ select   Enter pick   type search', provider: '↑↓ navigate   Enter select', settings: 'click or ↑↓/number to edit' };
+  document.getElementById('input-hint').textContent = hints[v];
+}
+
+render();
+</script>
