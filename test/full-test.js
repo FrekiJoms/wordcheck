@@ -209,9 +209,9 @@ async function runAll() {
   // ========== AI AGENT CONFIG ==========
   console.log("\n=== AI AGENT ===");
   const { LLMClient, getAllTools, SYSTEM_PROMPT, loadConfig } = modules.aiAgent;
-  test("getAllTools returns 24 tools", () => {
+  test("getAllTools returns 27 tools", () => {
     const tools = getAllTools();
-    if (tools.length !== 24) throw new Error("count: " + tools.length);
+    if (tools.length !== 27) throw new Error("count: " + tools.length);
   });
   test("tools have required fields", () => {
     const tools = getAllTools();
